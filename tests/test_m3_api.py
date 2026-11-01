@@ -257,3 +257,11 @@ def test_recorded_agent_follows_each_seed_roster():
 def test_empty_key_path_has_a_plain_message():
     with pytest.raises(gcp.KeyError_, match="Point to a Google Cloud"):
         gcp.check_key("")
+
+
+def test_vector_created_on_a_loaded_model_can_steer(client):
+    r = client.post("/vectors", json={"vector_id": "made-here", "positive": ["awful day"], "negative": ["plain day"]})
+    assert r.status_code == 200 and "made-here" in r.json()["vectors"]
+    moved = client.post("/steer/chat", json={"prompt": "hello", "vector_id": "made-here", "strength": 300.0, "max_new_tokens": 16}).json()
+    assert not moved["identical"]
+    assert client.post("/vectors", json={"vector_id": "bad id", "positive": ["a"], "negative": ["b"]}).status_code == 422

@@ -146,7 +146,8 @@ watch_features: [0, 1, 2, 3]
 | Symptom | Likely cause | Fix |
 |---|---|---|
 | The interface says the API cannot be reached | The API stopped | Restart `./scripts/run.sh` |
-| `Quota exceeded` on provisioning | The project has no L4 quota in the zone | Request `NVIDIA_L4_GPUS` quota, or choose another zone |
+| `Quota 'GPUS_ALL_REGIONS' exceeded` | The project's global GPU limit is used up, often by another GPU machine | Delete that machine, or request a higher `GPUS_ALL_REGIONS` limit. New projects often start at a limit of 1 |
+| `Quota exceeded` for `NVIDIA_L4_GPUS` | The project has no L4 quota in the zone | Request `NVIDIA_L4_GPUS` quota, or choose another zone |
 | `ZONE_RESOURCE_POOL_EXHAUSTED` | No GPUs free in the zone | Choose another zone |
 | A 403 from Hugging Face on the machine | The Gemma terms have not been accepted, or the token lacks read access | Accept the terms and replace the token file |
 | Clamp and ablate are unavailable | The live model has no sparse autoencoder configured | Set `sae_repo` and `sae_path` in the config |
