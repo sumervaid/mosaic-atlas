@@ -56,6 +56,13 @@ class SteerRequest(BaseModel):
     model: str = TEST_MODEL
 
 
+class VectorRequest(BaseModel):
+    vector_id: str
+    positive: list[str]
+    negative: list[str]
+    model: str | None = None
+
+
 class AblateRequest(BaseModel):
     fork_id: str
     message_id: str
@@ -400,6 +407,23 @@ def create_app(home: str | Path | None = None) -> FastAPI:
         moved = be.generate([GenRequest("steered", prompt, body.seed, ops=[op])], **args)[0]
         return {"default": plain.text, "steered": moved.text, "model": be.name, "is_test_model": be.is_test, "seed": body.seed,
                 "identical": plain.tokens == moved.tokens}
+
+    @app.post("/vectors")
+    def create_vector(body: VectorRequest):
+        """Build a persona vector on a loaded model from contrastive statements."""
+        if not re.fullmatch(r"[A-Za-z0-9_-]+", body.vector_id):
+            raise HTTPException(422, "Vector ids use letters, numbers, dashes, and underscores.")
+        if not body.positive or not body.negative:
+            raise HTTPException(422, "A vector needs positive and negative statements.")
+        be = live_backend(body.model)
+        with store.lock:
+            be.contrastive_vector(body.positive, body.negative, body.vector_id)
+        return {"vector_id": body.vector_id, "model": be.name, "layer": be.layer, "vectors": sorted(be.vectors)}
+
+    @app.get("/vectors")
+    def list_vectors(model: str | None = None):
+        be = live_backend(model)
+        return {"model": be.name, "vectors": sorted(be.vectors), "layer": be.layer}
 
     @app.get("/steer/recorded")
     def steer_recorded(comparison: str, seed: int | None = None, agent: str | None = None):
