@@ -17,7 +17,8 @@ from typing import Callable, Sequence
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-from mosaic.engine import checker, log as eventlog
+from mosaic.engine import checker
+from mosaic.engine import log as eventlog
 from mosaic.engine.topology import build_agents, build_edges
 from mosaic.schemas import ExperimentConfig, Intervention
 from mosaic.serve.backend import Backend, GenRequest, ops_for

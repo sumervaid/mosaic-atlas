@@ -1,0 +1,21 @@
+cff-version: 1.2.0
+message: Please cite this software with the metadata below.
+title: MOSAIC Atlas
+abstract: Open-source research infrastructure for causal identification across levels in agentic organizations.
+type: software
+authors:
+  - family-names: Vaid
+    given-names: Sumer
+    affiliation: AI Institute, Harvard Business School, Harvard University
+  - family-names: Whillans
+    given-names: Ashley V.
+    affiliation: Negotiation, Organizations and Markets Unit, Harvard Business School, Harvard University
+repository-code: https://github.com/sumervaid/mosaic-atlas
+license: Apache-2.0
+version: 0.1.0
+date-released: 2026-11-01
+keywords:
+  - agentic organizations
+  - multi-agent systems
+  - interpretability
+  - organization science

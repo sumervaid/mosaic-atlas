@@ -5,7 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from mosaic.engine import checker, log as eventlog
+from mosaic.engine import checker
+from mosaic.engine import log as eventlog
 from mosaic.engine.fork import run_fork
 from mosaic.engine.sim import Simulation
 from mosaic.engine.topology import build_agents, build_edges, hop_distances
