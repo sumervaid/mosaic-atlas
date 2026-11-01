@@ -1,85 +1,110 @@
 # MOSAIC Atlas
 
-MOSAIC (Multilevel Observation of Swarms with Agent Interpretability and Control) is open-source research infrastructure for studying groups of AI agents from the inside. Atlas is the interface. Researchers pick AI agents, alter an activation inside those AI agents, fork the group into paired control and treatment branches from one saved state, and see how the change spreads through messages, surveys, and internal activations.
+[![CI](https://github.com/sumervaid/mosaic-atlas/actions/workflows/ci.yml/badge.svg)](https://github.com/sumervaid/mosaic-atlas/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+
+MOSAIC (Multilevel Observation of Swarms with Agent Interpretability and Control) is open-source research infrastructure for causal identification across levels in agentic organizations. MOSAIC Atlas is the interface. Researchers alter the internal activations of one AI agent, or change a management arrangement for a whole team, and trace the effect across messages, surveys, and internal activations from one saved state.
+
+![The Intervene screen on a recorded session with fifty AI agents](docs/screenshots/intervene-recorded.png)
 
 ## Quick start
 
-Needs Python 3.11 through [uv](https://docs.astral.sh/uv/), Node 20 or later, and pnpm. Needs no GPU, no download, and no credentials.
+Installation needs [uv](https://docs.astral.sh/uv/), Node 20 or later, and pnpm. Recorded sessions and the test model work on a CPU with zero credentials.
 
 ```bash
+git clone https://github.com/sumervaid/mosaic-atlas.git
+cd mosaic-atlas
 ./scripts/install.sh
 ./scripts/run.sh
 ```
 
-Open http://127.0.0.1:3000. The first screen shows recorded pilot runs on Gemma 3 4B. Choose "New test experiment" to run the whole loop on a CPU test model.
+The interface opens at http://127.0.0.1:3000 on recorded sessions from Gemma 3 4B. Choosing New test experiment forks 256 AI agents on the CPU test model in under a minute.
 
-## Three kinds of data
+The [user guide](docs/user-guide.md) covers a first experiment, connecting a Google Cloud key, and working with a live model.
 
-| Data | What it is | Needs |
+## Core loop
+
+1. Researchers choose AI agents on the map, or choose a whole team.
+2. Researchers clamp a feature, ablate a feature, or add a steering vector inside those AI agents.
+3. MOSAIC forks the team into paired control and treatment branches from one saved state.
+4. Researchers read the divergence front, the effect by hop, the outcomes with 95% intervals, and paired messages.
+
+## Screens
+
+| Screen | Purpose |
+|---|---|
+| Intervene | Fork a team and compare branches across levels |
+| Concepts | Inspect one concept across messages and AI agents |
+| Search | Find concepts by explanation or by active features |
+| Steer | Compare default and steered messages side by side |
+| Contagion tracer | Measure the causal weight of one message by replay |
+| Setup | Connect a Google Cloud key and manage a GPU machine |
+
+| | |
+|---|---|
+| ![Steer](docs/screenshots/steer-recorded.png) | ![Concepts](docs/screenshots/concept.png) |
+| ![Contagion tracer](docs/screenshots/contagion.png) | ![Setup](docs/screenshots/setup.png) |
+
+## Sources of data
+
+| Source | Description | Requirements |
 |---|---|---|
-| Recorded | Real pilot runs on Gemma 3 4B, read only, with hash chains verified on import | Nothing |
-| Test model | Live runs on a tiny random Gemma 3. Verifies the software. Its text and numbers have no scientific meaning, and every screen says so | Nothing |
+| Recorded | Pilot sessions on Gemma 3 4B, read only, with verified hash chains | None |
+| Test model | A tiny Gemma 3 with random weights, used to verify the software, with a permanent banner on every screen | None |
 | Live model | Gemma 3 4B or 12B with Gemma Scope 2 | A GPU and Hugging Face access to Gemma 3 |
 
-## Run on Google Cloud
-
-Create a service account key and a Hugging Face token, then:
+## Working on Google Cloud
 
 ```bash
+./scripts/gcp_create_key.sh MY_PROJECT
 .venv/bin/mosaic gcp configure --key ~/keys/mosaic-sa.json --hf-token-file ~/keys/hf-token --profile 4b --zone us-central1-a
-.venv/bin/mosaic gcp up             # prints the commands and changes nothing
-.venv/bin/mosaic gcp up --execute   # creates the machine, which bills by the hour
-.venv/bin/mosaic gcp tunnel         # prints the SSH tunnel command, run it in a second terminal
+.venv/bin/mosaic gcp up             # prints each command and changes nothing
+.venv/bin/mosaic gcp up --execute   # creates the machine, billed by the hour
+.venv/bin/mosaic gcp tunnel         # prints the SSH tunnel command for a second terminal
 API_URL=http://127.0.0.1:8000 ./scripts/run.sh
 .venv/bin/mosaic gcp down --execute # deletes the machine
 ```
 
-The Setup screen does the same from the browser. Only the path to a key is stored. Key contents are never logged, returned by the API, or copied to the machine. The full walkthrough is in [docs/USER_GUIDE.md](docs/USER_GUIDE.md).
+The platform stores paths to credentials alone. See [SECURITY.md](SECURITY.md) for the handling of keys and tokens.
 
-## What is verified
+## Verification status
 
-| Milestone | Status | Evidence |
+| Component | Status | Evidence |
 |---|---|---|
-| M0 Schemas, configs, CI | Done | `pytest`, `pnpm test` |
-| M1 Serving with per-request interventions | Done on the test model | Clamp lands within 1e-3. Untargeted rows match an unhooked run exactly |
-| M2 Engine, snapshot, fork, signed log | Done on the test model | 32 agents complete 500 steps. Control branches are token-identical. Any edited entry is detected |
-| M3 Analysis and API | Done | 32 agents and 10 replicates. Recorded runs reproduce the pilot's published estimates |
-| M4 Intervene screen | Done on the test model at 256 agents | Browser loop with WebSocket progress. Checked from a fresh clone on macOS |
-| M5 Concept, Search, Steer, Contagion | Done, reading recorded runs and the test model | Replay without a message produces a measured edge weight |
-| M6 Scale on vLLM or SGLang | Not built | |
+| Per-agent clamp, ablate, and add | Verified on the test model | A clamp lands within 0.001 of target, with other batch rows matching an unaltered session exactly |
+| Saved states, paired forks, signed log | Verified on the test model | 32 AI agents complete 500 steps, with control branches matching token by token and edited log entries detected |
+| Analysis and API | Verified | A fork of 32 AI agents with 10 replicates returns all results with 95% intervals |
+| Recorded sessions | Verified | Tests reproduce published pilot estimates from the imported logs |
+| Web interface at 256 AI agents | Verified on the test model | A browser test completes the full loop with live progress |
+| Installation | Verified on macOS | A fresh clone installs, starts, and completes a fork of 256 AI agents |
+| Loading, generation, and steering code | Partly verified | Checked on the CPU with Pythia 70M, with the Gemma Scope 2 file layout matched against the release |
+| Google Cloud provisioning | Partly verified | A service account authenticated, with the request reaching Google and stopping at the project GPU quota |
+| Gemma 3 with Gemma Scope 2 on a GPU | Awaiting execution | Execution awaits a free GPU |
+| Natural language autoencoder readouts | Planned | The platform labels the said versus represented gap as awaiting measurement |
+| Lean 4 proof checker | Planned | A deterministic stand-in evaluates closed arithmetic claims |
+| vLLM or SGLang serving | Planned | Serving currently uses forward hooks in Hugging Face Transformers |
 
-Not yet done:
+## Documentation
 
-- Gemma 3 with Gemma Scope 2 has not been executed. The loading, generation, and steering code was checked on the CPU with a small real model, Pythia 70M, and the Gemma Scope 2 file layout was checked against the release.
-- The Google Cloud commands have been previewed, and the image family was confirmed to exist. They have not been executed with a real key.
-- Natural language autoencoder readouts are not wired in. The said versus represented gap is reported as not measured.
-- The proof checker is a deterministic stand-in for Lean 4.
-- Batch-invariant decoding is tested on the CPU only.
-
-[DECISIONS.md](DECISIONS.md) records every departure from the design handoff.
+| Document | Contents |
+|---|---|
+| [User guide](docs/user-guide.md) | Installation, first experiment, Google Cloud, troubleshooting |
+| [Architecture](docs/architecture.md) | Modules, data flow, and files on disk |
+| [API reference](docs/api.md) | Endpoints, with real responses in [docs/api-examples](docs/api-examples) |
+| [Decisions](docs/decisions.md) | Every departure from the design brief, with the reason |
 
 ## Tests
 
 ```bash
-.venv/bin/python -m pytest -q              # includes the 500-step acceptance test
-.venv/bin/python -m pytest -q -m "not slow"
+.venv/bin/python -m pytest -q          # includes the 500-step acceptance test
+.venv/bin/ruff check mosaic tests scripts
 cd web && pnpm test
 ```
 
-## Repository layout
+## Citation
 
-```
-mosaic/engine     simulation core: agents, routing, snapshot, fork, signed log
-mosaic/serve      inference with per-request activation interventions
-mosaic/interp     sparse autoencoders
-mosaic/analysis   divergence front, hop effects, outcome estimates, recorded runs
-mosaic/api        FastAPI, REST and WebSocket
-mosaic/compute    Google Cloud setup
-web               Next.js interface
-configs           experiment YAML
-data/imported     recorded pilot runs
-```
+Citation details are in [CITATION.cff](CITATION.cff).
 
-## Licence note
+## License
 
-Gemma weights are under the Gemma Terms of Use. Researchers must accept those terms on Hugging Face before using a live model. Check those terms before publishing logs or derived datasets. The recorded runs in `data/imported` contain text generated by Gemma 3 4B.
+The code is under the [Apache License 2.0](LICENSE). Gemma weights are under the Gemma Terms of Use, accepted separately on Hugging Face. Recorded sessions in `data/imported` contain text generated by Gemma 3 4B, and researchers should review those terms before redistributing derived datasets.

@@ -21,7 +21,7 @@ from mosaic.analysis import recorded
 from mosaic.api.store import Store
 from mosaic.compute import gcp
 from mosaic.engine.sim import Simulation
-from mosaic.engine.topology import build_edges, build_agents
+from mosaic.engine.topology import build_agents
 from mosaic.schemas import ExperimentConfig, ForkSpec, load_config
 from mosaic.serve.backend import GenRequest, Op
 

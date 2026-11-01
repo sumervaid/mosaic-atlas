@@ -7,7 +7,7 @@ This guide takes researchers from a fresh machine to a first experiment, then to
 Needs [uv](https://docs.astral.sh/uv/), Node 20 or later, and pnpm. Needs no GPU, no download of model weights, and no credentials.
 
 ```bash
-git clone <repository URL> mosaic-atlas
+git clone https://github.com/sumervaid/mosaic-atlas.git
 cd mosaic-atlas
 ./scripts/install.sh
 ./scripts/run.sh
@@ -59,7 +59,7 @@ Live models need a GPU. MOSAIC creates one machine in a Google Cloud project wit
 
 ### Create the credentials
 
-`./scripts/gcp_create_key.sh MY_PROJECT` performs these steps, and `./scripts/gcp_create_key.sh MY_PROJECT --remove` undoes them. The steps by hand follow. Replace `MY_PROJECT` with a project that has billing enabled and NVIDIA L4 GPU quota in the chosen zone.
+`./scripts/gcp_create_key.sh MY_PROJECT` performs these steps from a project owner's login. `./scripts/gcp_create_key.sh MY_PROJECT --remove` reverses them. The steps by hand follow. Replace `MY_PROJECT` with a project with billing enabled, NVIDIA L4 quota in the chosen zone, and free `GPUS_ALL_REGIONS` quota.
 
 ```bash
 gcloud services enable compute.googleapis.com --project MY_PROJECT

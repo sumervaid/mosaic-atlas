@@ -208,6 +208,7 @@ def test_real_release_layout_loads(tmp_path, monkeypatch):
     """The Gemma Scope 2 file stores w_enc as [d_model, n_features]. Checked against the release header."""
     import torch
     from safetensors.torch import save_file
+
     from mosaic.interp.sae import JumpReLUSAE
 
     d, n = 8, 32
