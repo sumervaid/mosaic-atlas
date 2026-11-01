@@ -11,7 +11,7 @@ import { scales } from "@/lib/tokens";
 import type { ForkResults } from "@/lib/types";
 
 const root = path.resolve(__dirname, "..");
-const example = (name: string) => JSON.parse(readFileSync(path.join(root, "..", "docs", "api_examples", name), "utf8"));
+const example = (name: string) => JSON.parse(readFileSync(path.join(root, "..", "docs", "api-examples", name), "utf8"));
 
 afterEach(() => {
   cleanup();
