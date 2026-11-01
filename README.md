@@ -3,7 +3,7 @@
 [![CI](https://github.com/sumervaid/mosaic-atlas/actions/workflows/ci.yml/badge.svg)](https://github.com/sumervaid/mosaic-atlas/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
-MOSAIC (Multilevel Observation of Swarms with Agent Interpretability and Control) is open-source research infrastructure for causal identification across levels in agentic organizations. MOSAIC Atlas is the interface. Researchers alter the internal activations of one AI agent, or change a management arrangement for a whole team, and trace the effect across messages, surveys, and internal activations from one saved state.
+MOSAIC (Multilevel Observation of Swarms with Agent Interpretability and Control) is open-source research infrastructure for causal identification across levels of analysis in agentic organizations. MOSAIC Atlas is the interface. Researchers alter the internal activations of one AI agent, or change a management arrangement for a whole team, and trace the effect across messages, surveys, and internal activations from one saved state.
 
 ![The Intervene screen on a recorded session with fifty AI agents](docs/screenshots/intervene-recorded.png)
 
@@ -33,7 +33,7 @@ The [user guide](docs/user-guide.md) covers a first experiment, connecting a Goo
 
 | Screen | Purpose |
 |---|---|
-| Intervene | Fork a team and compare branches across levels |
+| Intervene | Fork a team and compare branches across levels of analysis |
 | Concepts | Inspect one concept across messages and AI agents |
 | Search | Find concepts by explanation or by active features |
 | Steer | Compare default and steered messages side by side |
