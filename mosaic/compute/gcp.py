@@ -11,6 +11,7 @@ import os
 import shlex
 import stat
 import subprocess
+import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
@@ -31,6 +32,8 @@ class KeyError_(ValueError):
 
 def check_key(path: str | Path) -> dict:
     """Validate a service account key file. Returns only non-secret fields."""
+    if not str(path).strip():
+        raise KeyError_("Point to a Google Cloud service account key file.")
     p = Path(path).expanduser()
     if not p.is_file():
         raise KeyError_(f"No file at {p}.")
@@ -56,7 +59,7 @@ class Settings:
     instance: str = "mosaic-atlas"
     profile: str = "4b"
     hf_token_path: str = ""
-    image_family: str = "common-cu124-ubuntu-2204-py310"
+    image_family: str = "common-cu129-ubuntu-2204-nvidia-580"
     image_project: str = "deeplearning-platform-release"
 
 
@@ -85,11 +88,10 @@ def up_commands(s: Settings) -> list[list[str]]:
     tarball = str(STATE_DIR / "mosaic-atlas.tar.gz")
     return [
         ["gcloud", "auth", "activate-service-account", f"--key-file={s.key_path}"],
-        ["gcloud", "services", "enable", "compute.googleapis.com", f"--project={s.project}"],
         ["gcloud", "compute", "instances", "create", s.instance, *base, f"--machine-type={prof['machine']}",
          f"--accelerator=type=nvidia-l4,count={prof['gpus']}", "--maintenance-policy=TERMINATE",
          f"--image-family={s.image_family}", f"--image-project={s.image_project}", "--boot-disk-size=200GB",
-         "--boot-disk-type=pd-ssd", "--metadata=install-nvidia-driver=True"],
+         "--boot-disk-type=pd-ssd"],
         ["git", "-C", str(ROOT), "archive", "--format=tar.gz", "-o", tarball, "HEAD"],
         ["gcloud", "compute", "scp", *base, tarball, f"{s.instance}:~/mosaic-atlas.tar.gz"],
         ["gcloud", "compute", "scp", *base, s.hf_token_path, f"{s.instance}:~/.mosaic_hf_token"],
@@ -127,6 +129,18 @@ def validate(s: Settings, need_hf: bool = True) -> list[str]:
     return problems
 
 
+def _run_with_retry(cmd: list[str], s: Settings):
+    """SSH refuses connections for the first minutes after a machine boots, so copies and logins retry."""
+    is_ssh = cmd[:3] in (["gcloud", "compute", "scp"], ["gcloud", "compute", "ssh"])
+    attempts = 20 if is_ssh else 1
+    for attempt in range(attempts):
+        proc = subprocess.run(cmd, env=_env(s), capture_output=True, text=True)
+        if proc.returncode == 0 or attempt == attempts - 1:
+            return proc
+        time.sleep(15)
+    return proc
+
+
 def run(commands: list[list[str]], s: Settings, dry_run: bool = True, on_line=None) -> dict:
     """Print or run gcloud commands. Each key is passed as a path, so output cannot contain its contents."""
     printable = [" ".join(shlex.quote(c) for c in cmd) for cmd in commands]
@@ -137,7 +151,7 @@ def run(commands: list[list[str]], s: Settings, dry_run: bool = True, on_line=No
     for cmd, text in zip(commands, printable):
         if on_line:
             on_line(text)
-        proc = subprocess.run(cmd, env=_env(s), capture_output=True, text=True)
+        proc = _run_with_retry(cmd, s)
         done.append({"command": text, "returncode": proc.returncode, "stderr": proc.stderr[-1500:]})
         if proc.returncode != 0:
             return {"dry_run": False, "ok": False, "steps": done}

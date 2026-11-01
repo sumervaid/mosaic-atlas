@@ -129,6 +129,7 @@ def recorded_results(fork_id: str) -> dict:
         "map": {"control": {str(s): v for s, v in map_c.items() if v}, "treatment": {str(s): v for s, v in map_t.items() if v}},
         "log_verification": {"branches_checked": len(verified), "all_ok": all(verified), "kind": "hash chain"},
         "map_seed": seeds[0], "hop_levels": HOP_LABELS[:2],
+        "rosters": {str(seed): [a["id"] for a in trt[seed]["agents"]] for seed in seeds},
     }
 
 
@@ -137,6 +138,9 @@ def recorded_agent(fork_id: str, agent: str, seed: int | None = None) -> dict:
     ctl, trt = load_config(comp["control"]), load_config(comp["treatment"])
     seed = seed if seed is not None else sorted(set(ctl) & set(trt))[0]
     c, t = ctl[seed], trt[seed]
+    # Each seed draws its own personas. A name from another seed means the manipulated agent of this seed.
+    if agent not in {a["id"] for a in t["agents"]}:
+        agent = _manipulated(comp, {seed: t})
     pick = lambda run: sorted(({"step": m["step"], "text": m["text"], "id": m["id"]} for m in run["messages"] if m["sender"] == agent),
                               key=lambda x: x["step"])
     cm, tm = pick(c), pick(t)

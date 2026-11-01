@@ -96,6 +96,12 @@ class Store:
         d = self.exp_dir(exp_id) / "forks"
         return sorted(p.name for p in d.iterdir()) if d.exists() else []
 
+    def latest_complete_fork(self, exp_id: str) -> str | None:
+        """The most recently finished fork. Fork ids are random, so order comes from the completion file."""
+        d = self.exp_dir(exp_id) / "forks"
+        done = [p for p in d.iterdir() if (p / "fork.json").exists()] if d.exists() else []
+        return max(done, key=lambda p: (p / "fork.json").stat().st_mtime).name if done else None
+
     def make_snapshot(self, exp_id: str, step: int) -> dict:
         cfg = self.config(exp_id)
         be = self.backend(cfg)
