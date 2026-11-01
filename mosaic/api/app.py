@@ -9,6 +9,7 @@ import threading
 from dataclasses import asdict
 from pathlib import Path
 
+import duckdb
 import numpy as np
 import torch
 import yaml
@@ -189,6 +190,16 @@ def create_app(home: str | Path | None = None) -> FastAPI:
                 raise HTTPException(422, "Clamp needs a target value.")
             if iv.op == "add" and (iv.vector_id is None or iv.alpha is None):
                 raise HTTPException(422, "Add needs a vector and a coefficient.")
+        # Catch a bad reference now, not partway through a long run.
+        be = store.backend(cfg)
+        for iv in spec.interventions:
+            if iv.op == "add" and iv.vector_id not in be.vectors:
+                raise HTTPException(422, f"No vector named {iv.vector_id}. Available: {sorted(be.vectors)}.")
+            if iv.op in ("clamp", "ablate"):
+                if be.sae is None:
+                    raise HTTPException(422, "This model has no sparse autoencoder loaded.")
+                if not 0 <= iv.feature < be.sae.n_features:
+                    raise HTTPException(422, f"Feature indices run from 0 to {be.sae.n_features - 1}.")
         return {"fork_id": store.start_fork(spec)}
 
     @app.get("/forks/{fork_id}")
@@ -283,7 +294,6 @@ def create_app(home: str | Path | None = None) -> FastAPI:
             for fid in exp["forks"]:
                 d = store.fork_dir(fid)
                 for pq_path in list(d.glob("*/readings.parquet"))[:8] if d else []:
-                    import duckdb
                     src = "sae" if source != "vector" else f"vector:{label}"
                     feat = index if source != "vector" else 0
                     q = (f"select step, agent, message_id, max_act from read_parquet('{pq_path}') where source = ? and feature = ? "
@@ -292,9 +302,19 @@ def create_app(home: str | Path | None = None) -> FastAPI:
                     mp = pq_path.parent / "messages.jsonl"
                     if mp.exists():
                         msgs = {m["id"]: m["text"] for m in map(json.loads, mp.open(encoding="utf-8"))}
-                    for s, a, mid, mx in duckdb.execute(q, [src, feat]).fetchall():
+                    with duckdb.connect() as con:
+                        found = con.execute(q, [src, feat]).fetchall()
+                    for s, a, mid, mx in found:
                         rows.append({"activation": float(mx), "text": msgs.get(mid, ""), "agent": a, "step": int(s), "config": exp["id"]})
         rows.sort(key=lambda r: -r["activation"])
+        # Paired branches often hold the identical message, so show each message once.
+        seen, unique = set(), []
+        for row in rows:
+            key = (row["agent"], row["step"], row["text"])
+            if key not in seen:
+                seen.add(key)
+                unique.append(row)
+        rows = unique
         return {"model": model, "source": source, "index": index, "label": label, "layer": be.layer,
                 "n_features": be.sae.n_features if be.sae is not None else len(be.vectors), "live": True, "is_test_model": be.is_test,
                 "explanations": [], "explanations_note": "No explanation has been generated for this feature.",
@@ -327,11 +347,10 @@ def create_app(home: str | Path | None = None) -> FastAPI:
     def concept_swarm(model: str, source: str, index: int, experiment: str, step: int | None = None):
         if experiment in recorded.manifest()["comparisons"]:
             return recorded.recorded_swarm(experiment, step)
-        d = store.exp_dir(experiment) / "forks"
-        forks = store.forks(experiment)
-        if not forks:
-            return {"step": None, "agents": {}, "role_means": {}, "per_step_mean": {}, "empty": "This experiment has no fork yet."}
-        res = store.fork_results(forks[-1], index if source != "vector" else 0, "sae" if source != "vector" else "vector:test-vector")
+        latest = store.latest_complete_fork(experiment)
+        if not latest:
+            return {"step": None, "agents": {}, "role_means": {}, "per_step_mean": {}, "empty": "This experiment has no finished fork yet."}
+        res = store.fork_results(latest, index if source != "vector" else 0, "sae" if source != "vector" else "vector:test-vector")
         if res is None:
             return {"step": None, "agents": {}, "role_means": {}, "per_step_mean": {}, "empty": "The latest fork has not finished."}
         m = res["map"]["control"]
@@ -409,10 +428,10 @@ def create_app(home: str | Path | None = None) -> FastAPI:
                              "These recorded runs show the messages and no causal weights."}
         if not (store.exp_dir(experiment) / "config.yaml").exists():
             raise HTTPException(404, f"No experiment named {experiment}.")
-        forks = store.forks(experiment)
-        if not forks:
+        latest = store.latest_complete_fork(experiment)
+        if not latest:
             return {"agents": [], "nodes": [], "edges": [], "empty": "Run a fork first."}
-        d = store.fork_dir(forks[-1])
+        d = store.fork_dir(latest)
         msgs = []
         p = d / "r000-treatment" / "messages.jsonl"
         if p.exists():
@@ -421,7 +440,7 @@ def create_app(home: str | Path | None = None) -> FastAPI:
                  if (window_start is None or m["step"] >= window_start) and (window_end is None or m["step"] <= window_end)]
         edges = [e for e in contagion_edges(experiment) if e["feature"] == feature and abs(e["weight"]) >= prune]
         cfg = store.config(experiment)
-        return {"recorded": False, "is_test_model": cfg.model.backend == "test", "fork_id": forks[-1],
+        return {"recorded": False, "is_test_model": cfg.model.backend == "test", "fork_id": latest,
                 "agents": [a.model_dump() for a in build_agents(cfg)], "nodes": nodes, "edges": edges,
                 "empty": None if edges else "No edge is measured yet. Choose a message and replay without it."}
 

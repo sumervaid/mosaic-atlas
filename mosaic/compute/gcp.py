@@ -32,6 +32,8 @@ class KeyError_(ValueError):
 
 def check_key(path: str | Path) -> dict:
     """Validate a service account key file. Returns only non-secret fields."""
+    if not str(path).strip():
+        raise KeyError_("Point to a Google Cloud service account key file.")
     p = Path(path).expanduser()
     if not p.is_file():
         raise KeyError_(f"No file at {p}.")

@@ -10,3 +10,5 @@ web/node_modules/
 web/.next/
 web/out/
 .pytest_cache/
+web/tsconfig.tsbuildinfo
+web/test-results/

@@ -216,3 +216,44 @@ def test_real_release_layout_loads(tmp_path, monkeypatch):
     monkeypatch.setattr("huggingface_hub.hf_hub_download", lambda repo, name: str(tmp_path / "params.safetensors"))
     sae = JumpReLUSAE.load("repo", "path")
     assert sae.w_enc.shape == (n, d) and sae.encode(torch.zeros(2, d)).shape == (2, n)
+
+
+def test_concurrent_analysis_reads_do_not_fail(client, fork):
+    from concurrent.futures import ThreadPoolExecutor
+
+    with ThreadPoolExecutor(8) as ex:
+        codes = list(ex.map(lambda _: client.get(f"/forks/{fork}/results").status_code, range(16)))
+    assert codes == [200] * 16
+
+
+def test_bad_references_are_refused_before_the_run(client):
+    base = {"experiment_id": "m3", "snapshot_step": 1, "replicates": 1}
+    bad_vec = {"agents": ["A001"], "layer": 2, "op": "add", "vector_id": "no-such-vector", "alpha": 1.0}
+    bad_feat = {"agents": ["A001"], "layer": 2, "op": "ablate", "feature": 999999}
+    assert "No vector" in client.post("/forks", json=dict(base, interventions=[bad_vec])).json()["detail"]
+    assert "Feature indices" in client.post("/forks", json=dict(base, interventions=[bad_feat])).json()["detail"]
+
+
+def test_latest_complete_fork_ignores_unfinished_forks(client, fork):
+    store = client.app.state.store
+    unfinished = store.exp_dir("m3") / "forks" / "zzzzzzzz"
+    unfinished.mkdir()
+    try:
+        assert store.latest_complete_fork("m3") != "zzzzzzzz"
+        assert client.get("/contagion/m3/graph").json()["fork_id"] != "zzzzzzzz"
+    finally:
+        unfinished.rmdir()
+
+
+def test_recorded_agent_follows_each_seed_roster():
+    res = recorded.recorded_results("pilot-negative-lead")
+    seeds = sorted(int(k) for k in res["rosters"])
+    assert len({tuple(res["rosters"][str(s)]) for s in seeds}) > 1, "the seeds share one roster"
+    other = next(s for s in seeds if res["targets"][0] not in res["rosters"][str(s)])
+    r = recorded.recorded_agent("pilot-negative-lead", res["targets"][0], other)
+    assert r["control"] and r["agent"] in res["rosters"][str(other)]
+
+
+def test_empty_key_path_has_a_plain_message():
+    with pytest.raises(gcp.KeyError_, match="Point to a Google Cloud"):
+        gcp.check_key("")

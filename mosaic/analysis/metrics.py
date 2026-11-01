@@ -68,9 +68,11 @@ def readings_by(fork_dir: Path, branch: str, source: str, feature: int) -> dict[
     p = fork_dir / branch / "readings.parquet"
     if not p.exists():
         return {}
-    rows = duckdb.execute(
-        f"select step, agent, avg(mean_act) from read_parquet('{p}') where source = ? and feature = ? group by 1, 2",
-        [source, feature]).fetchall()
+    # One connection per query. The module-level default connection is not safe across API threads.
+    with duckdb.connect() as con:
+        rows = con.execute(
+            f"select step, agent, avg(mean_act) from read_parquet('{p}') where source = ? and feature = ? group by 1, 2",
+            [source, feature]).fetchall()
     return {(int(s), a): float(v) for s, a, v in rows}
 
 
