@@ -1,7 +1,7 @@
 cff-version: 1.2.0
 message: Please cite this software with the metadata below.
 title: MOSAIC Atlas
-abstract: Open-source research infrastructure for causal identification across levels in agentic organizations.
+abstract: Open-source research infrastructure for causal identification across levels of analysis in agentic organizations.
 type: software
 authors:
   - family-names: Vaid
