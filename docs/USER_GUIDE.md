@@ -59,7 +59,7 @@ Live models need a GPU. MOSAIC creates one machine in a Google Cloud project wit
 
 ### Create the credentials
 
-Replace `MY_PROJECT` with a project that has billing enabled and NVIDIA L4 GPU quota in the chosen zone.
+`./scripts/gcp_create_key.sh MY_PROJECT` performs these steps, and `./scripts/gcp_create_key.sh MY_PROJECT --remove` undoes them. The steps by hand follow. Replace `MY_PROJECT` with a project that has billing enabled and NVIDIA L4 GPU quota in the chosen zone.
 
 ```bash
 gcloud services enable compute.googleapis.com --project MY_PROJECT
