@@ -19,7 +19,8 @@ fi
 (cd web && NEXT_PUBLIC_API_URL="$API_URL" pnpm exec next build >/dev/null && NEXT_PUBLIC_API_URL="$API_URL" pnpm exec next start -p "$WEB_PORT") &
 pids+=($!)
 
-echo "Waiting for the web interface."
-until curl -sf "http://127.0.0.1:${WEB_PORT}" >/dev/null 2>&1; do sleep 1; done
+echo "Starting. The first start can take a minute."
+until curl -sf "${API_URL}/health" >/dev/null 2>&1; do sleep 1; done
+until curl -s -o /dev/null "http://127.0.0.1:${WEB_PORT}"; do sleep 1; done
 echo "MOSAIC Atlas is ready at http://127.0.0.1:${WEB_PORT}"
 wait
