@@ -44,7 +44,7 @@ The Setup screen does the same from the browser. Only the path to a key is store
 | M1 Serving with per-request interventions | Done on the test model | Clamp lands within 1e-3. Untargeted rows match an unhooked run exactly |
 | M2 Engine, snapshot, fork, signed log | Done on the test model | 32 agents complete 500 steps. Control branches are token-identical. Any edited entry is detected |
 | M3 Analysis and API | Done | 32 agents and 10 replicates. Recorded runs reproduce the pilot's published estimates |
-| M4 Intervene screen | Done on the test model at 256 agents | Browser loop with WebSocket progress |
+| M4 Intervene screen | Done on the test model at 256 agents | Browser loop with WebSocket progress. Checked from a fresh clone on macOS |
 | M5 Concept, Search, Steer, Contagion | Done, reading recorded runs and the test model | Replay without a message produces a measured edge weight |
 | M6 Scale on vLLM or SGLang | Not built | |
 
