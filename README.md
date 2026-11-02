@@ -22,6 +22,21 @@ The interface opens at http://127.0.0.1:3000 on recorded sessions from Gemma 3 4
 
 The [user guide](docs/user-guide.md) covers a first experiment, connecting a Google Cloud key, and working with a live model.
 
+## Workflow
+
+![The core loop on the test model, from a new experiment to verified results](docs/gifs/02-fork-and-compare.gif)
+
+The recording above follows researchers through the core loop on the test model, with random weights verifying the software alone. A separate session on a GPU is recorded in [docs/live-check](docs/live-check/gemma-3-4b.json).
+
+| Recording | Content |
+|---|---|
+| [A recorded session](docs/gifs/01-recorded-session.gif) | The comparison with fifty AI agents, from the map to paired messages at the first divergence |
+| [Fork and compare](docs/gifs/02-fork-and-compare.gif) | A new test experiment, a selection on the map, a fork with live progress, results, and log verification |
+| [Concepts and Search](docs/gifs/03-concepts-and-search.gif) | The recorded direction, top activations, the view across the team, and Search via inference with a token filter |
+| [Steer](docs/gifs/04-steer.gif) | Recorded default and steered messages by round, followed by the Live tab on the test model |
+| [Contagion replay](docs/gifs/05-contagion-replay.gif) | A selected message, a replay with the message removed, and the measured edge on the graph |
+| [Google Cloud setup](docs/gifs/06-google-cloud-setup.gif) | Fake demonstration paths, saved settings, non-secret key details, and previewed commands, stopping before any machine exists |
+
 ## Core loop
 
 1. Researchers choose AI agents on the map, or choose a whole team.
@@ -77,9 +92,12 @@ The platform stores paths to credentials alone. See [SECURITY.md](SECURITY.md) f
 | Recorded sessions | Verified | Tests reproduce published pilot estimates from the imported logs |
 | Web interface at 256 AI agents | Verified on the test model | A browser test completes the full loop with live progress |
 | Installation | Verified on macOS | A fresh clone installs, starts, and completes a fork of 256 AI agents |
-| Loading, generation, and steering code | Partly verified | Checked on the CPU with Pythia 70M, with the Gemma Scope 2 file layout matched against the release |
-| Google Cloud provisioning | Partly verified | A service account authenticated, with the request reaching Google and stopping at the project GPU quota |
-| Gemma 3 with Gemma Scope 2 on a GPU | Awaiting execution | Execution awaits a free GPU |
+| Loading, generation, and steering | Verified in one session | Gemma 3 4B with Gemma Scope 2 on one NVIDIA L4 produced coherent default and steered messages, recorded in [docs/live-check](docs/live-check/gemma-3-4b.json) |
+| Google Cloud provisioning | Verified once | A service account key created the machine, installed the platform, and served the API through an SSH tunnel, with the machine deleted afterward |
+| Decoding on a GPU | Verified in one session | Two control branches of 16 AI agents matched token by token over four steps |
+| Clamp precision on a GPU | Verified | Clamps land within 0.001 of target in float32 and within about 2 activation units in bf16 |
+| Sparse autoencoder on Gemma 3 4B | Reconstruction verified | The dictionary leaves 2.2% of variance unexplained at layer 14, with about 21 active features per token. The meaning of individual features remains unvalidated |
+| Gemma 3 12B, and 256 AI agents on a GPU | Awaiting execution | Execution awaits a machine with two NVIDIA L4s |
 | Natural language autoencoder readouts | Planned | The platform labels the said versus represented gap as awaiting measurement |
 | Lean 4 proof checker | Planned | A deterministic stand-in evaluates closed arithmetic claims |
 | vLLM or SGLang serving | Planned | Serving currently uses forward hooks in Hugging Face Transformers |
@@ -92,6 +110,7 @@ The platform stores paths to credentials alone. See [SECURITY.md](SECURITY.md) f
 | [Architecture](docs/architecture.md) | Modules, data flow, and files on disk |
 | [API reference](docs/api.md) | Endpoints, with real responses in [docs/api-examples](docs/api-examples) |
 | [Decisions](docs/decisions.md) | Every departure from the design brief, with the reason |
+| [Live check](docs/live-check/gemma-3-4b.json) | Requests and responses from a complete session on Gemma 3 4B |
 
 ## Tests
 

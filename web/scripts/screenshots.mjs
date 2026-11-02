@@ -4,6 +4,7 @@
 //   API_URL=http://127.0.0.1:8000 WEB_URL=http://127.0.0.1:3000 node scripts/screenshots.mjs
 //
 // Pass names to capture only some, such as: node scripts/screenshots.mjs setup concept
+// Start the API on a fresh MOSAIC_HOME. The setup scene expects no saved key, and the replay scene expects no saved edge.
 import { mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -147,6 +148,33 @@ const scenes = {
     await page.getByTestId("machine-card").getByRole("alert").waitFor({ timeout: TIMEOUT });
     await page.evaluate(() => document.activeElement?.blur());
     await shot(page, "setup", { fullPage: true });
+  },
+  async "steer-live"(page) {
+    await page.goto(`${WEB_URL}/steer?tab=live`);
+    await page.getByTestId("steer-run").click();
+    await page.getByTestId("steer-live-result").waitFor({ timeout: TIMEOUT });
+    await page.getByTestId("test-banner").waitFor({ timeout: TIMEOUT });
+    await page.mouse.move(0, 0);
+    await page.evaluate(() => document.activeElement?.blur());
+    await shot(page, "steer-live");
+  },
+  // Saves settings, so it follows the setup scene. Needs a fake key and token, written by scripts/record_workflows.sh.
+  async "setup-preview"(page) {
+    const { DEMO_KEY_PATH, DEMO_TOKEN_PATH } = process.env;
+    if (!DEMO_KEY_PATH || !DEMO_TOKEN_PATH) {
+      console.log("skipped setup-preview. Set DEMO_KEY_PATH and DEMO_TOKEN_PATH to fake files.");
+      return;
+    }
+    await page.goto(`${WEB_URL}/setup`);
+    await page.getByTestId("key-path").fill(DEMO_KEY_PATH);
+    await page.getByTestId("hf-path").fill(DEMO_TOKEN_PATH);
+    await page.getByTestId("setup-save").click();
+    await page.getByTestId("key-info").waitFor({ timeout: TIMEOUT });
+    await page.getByTestId("preview-commands").click();
+    await page.getByTestId("preview-output").waitFor({ timeout: TIMEOUT });
+    await page.mouse.move(0, 0);
+    await page.evaluate(() => document.activeElement?.blur());
+    await shot(page, "setup-preview", { fullPage: true });
   },
 };
 
