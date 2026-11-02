@@ -104,3 +104,13 @@ def test_watch_list_readout(be):
                       max_new_tokens=4, watch=[2], watch_vectors=["test-vector"])[0]
     assert abs(res.readings[2][0] - 5.0) < 1e-3
     assert "test-vector" in res.projections
+
+
+def test_encoder_keeps_decoder_bias_out_of_encoding():
+    """Gemma Scope encodes as x @ W_enc + b_enc. A random SAE has a zero decoder bias, which would hide this bug."""
+    from mosaic.interp.sae import JumpReLUSAE
+
+    w = torch.eye(4)
+    sae = JumpReLUSAE(w, w, torch.zeros(4), torch.full((4,), 100.0), torch.zeros(4), source="test")
+    x = torch.tensor([[1.0, 2.0, 3.0, 4.0]])
+    assert torch.equal(sae.encode(x), x)
