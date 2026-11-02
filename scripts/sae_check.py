@@ -1,6 +1,11 @@
-import json, torch
+"""Check a Gemma Scope 2 SAE, clamp precision, and batch invariance on real activations. Needs a GPU and model access."""
+import json
+
+import torch
+
 from mosaic.schemas import load_config
-from mosaic.serve.backend import Backend, GenRequest, Op, backend_from_config, _hidden
+from mosaic.serve.backend import GenRequest, Op, _hidden, backend_from_config
+
 cfg = load_config("configs/gemma4b_small.yaml")
 be = backend_from_config(cfg.model, cfg.layer)
 sae = be.sae
