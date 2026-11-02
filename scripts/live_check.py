@@ -56,12 +56,14 @@ save("steer_add", steer)
 search = c.get("/concepts/search", params={"mode": "inference", "model": model, "text": "This plan is a disaster and I am furious about it."}).json()
 save("search_inference", {"source": search["results"][0]["source"] if search["results"] else None, "top": search["results"][:5], "is_test_model": search.get("is_test_model")})
 feature = search["results"][0]["feature"]
+# A clamp target above the observed peak stays above the JumpReLU threshold of the feature.
+target = round(2 * search["results"][0]["max_act"], 1)
 
 concept = c.get(f"/concepts/{model}/{search['results'][0]['source']}/{feature}")
 save("concept_page", {"status": concept.status_code, "neighbours": concept.json().get("neighbours", [])[:3] if concept.status_code == 200 else concept.text[:300],
                       "logits_positive": concept.json().get("logits", {}).get("positive", [])[:5] if concept.status_code == 200 else None})
 
-iv = {"agents": ["A001"], "layer": cfg["layer"], "op": "clamp", "feature": feature, "value": 200.0}
+iv = {"agents": ["A001"], "layer": cfg["layer"], "op": "clamp", "feature": feature, "value": target}
 spec = {"experiment_id": "live-check", "snapshot_step": 1, "replicates": 1, "watch_feature": feature, "interventions": [iv]}
 t = time.time()
 fid = c.post("/forks", json=spec).json()["fork_id"]
@@ -72,7 +74,7 @@ if status["status"] == "complete":
     save("results", {"front": res["front"], "hop_effects": [{k: h[k] for k in ("hop", "agents", "overall")} for h in res["hop_effects"]],
                      "log_verification": res["log_verification"], "is_test_model": res["is_test_model"]})
     agent = c.get(f"/forks/{fid}/agents/A001", params={"feature": feature}).json()
-    save("clamp_readout", {"target": 200.0, "first_divergence": agent["first_divergence"], "trace": agent["trace"],
+    save("clamp_readout", {"target": target, "first_divergence": agent["first_divergence"], "trace": agent["trace"],
                            "control": [m["text"][:300] for m in agent["control"][:2]], "treatment": [m["text"][:300] for m in agent["treatment"][:2]]})
     g = c.get("/contagion/live-check/graph", params={"feature": feature}).json()
     node = next((n for n in g["nodes"] if n["agent"] == "A001" and n["step"] >= 1), None)

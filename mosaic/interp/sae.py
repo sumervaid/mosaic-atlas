@@ -24,7 +24,8 @@ class JumpReLUSAE:
     def pre(self, h: torch.Tensor, features: torch.Tensor | None = None) -> torch.Tensor:
         enc = self.w_enc if features is None else self.w_enc[features]
         bias = self.b_enc if features is None else self.b_enc[features]
-        return (h.to(enc.dtype) - self.b_dec) @ enc.T + bias
+        # The Gemma Scope encoder is x @ W_enc + b_enc. The decoder bias belongs to reconstruction alone.
+        return h.to(enc.dtype) @ enc.T + bias
 
     def encode(self, h: torch.Tensor, features: torch.Tensor | None = None) -> torch.Tensor:
         pre = self.pre(h, features)
